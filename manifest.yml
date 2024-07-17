@@ -1,0 +1,10 @@
+# manifest.yml
+name: netlify-plugin-imagekit
+inputs:
+  - name: urlEndpoint
+    required: false
+    description: "Imagekit URL endpoint - can be used as an input or environment variable via IMAGEKIT_URL_ENDPOINT"
+  - name: imagesPath
+    required: false
+    description: "Local path(s) application serves image assets from"
+    default: "/images"
