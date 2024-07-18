@@ -2,14 +2,11 @@ import path from 'path'
 import { JSDOM } from 'jsdom'
 import fg from 'fast-glob'
 
-import { ERROR_IMAGEKIT_URL_ENDPOINT_REQUIRED, ERROR_INVALID_IMAGES_PATH } from './data/error'
 
-import { Inputs } from './types/integration';
-
-export type CustomError= {
+export type CustomError = {
     imgSrc: string
     message: string
-  }
+}
 
 type Options = {
     localDir: string;
@@ -22,7 +19,7 @@ type Options = {
 interface FindAssetsByPath {
     baseDir: string;
     path: string | Array<string>;
-  }
+}
 
 
 function isReomteUrl(url: string) {
@@ -37,12 +34,12 @@ function getImagekitUrl({
     imagekitUrlEndpoint,
     transformations,
     remoteHost }: {
-    imgSrc: string
-    pageDirectory: string
-    localDir: string
-    imagekitUrlEndpoint: string
-    transformations: string
-    remoteHost: string
+        imgSrc: string
+        pageDirectory: string
+        localDir: string
+        imagekitUrlEndpoint: string
+        transformations: string
+        remoteHost: string
     }) {
     if (!isReomteUrl(imgSrc)) {
         imgSrc = removeLeadingSlash(imgSrc)
@@ -70,7 +67,7 @@ export async function updateHtmlImagesToImagekit(html: string, options: Options)
     const errorss: {
         imgSrc: string
         message: string
-      }[] = []
+    }[] = []
     const dom = new JSDOM(html)
 
     const images: HTMLImageElement[] = Array.from(dom.window.document.querySelectorAll('img'))
@@ -82,13 +79,10 @@ export async function updateHtmlImagesToImagekit(html: string, options: Options)
         if (!imgSrc) {
             continue
         }
-        console.log("yashPagePath", pagePath)
-        console.log("yashPublishPath", remoteHost)
-        console.log("yashImgSrc", imgSrc)
 
         imagekitUrlEndpoint = removeTrailingSlash(imagekitUrlEndpoint);
         remoteHost = removeTrailingSlash(remoteHost);
-        
+
         const finaUrl = getImagekitUrl({ imgSrc, pageDirectory, localDir, imagekitUrlEndpoint, transformations, remoteHost })
 
         $img.setAttribute('src', finaUrl)
@@ -107,7 +101,7 @@ export async function updateHtmlImagesToImagekit(html: string, options: Options)
                     return size;
                 }
 
-               const finaUrl = getImagekitUrl({ imgSrc: src, pageDirectory, localDir, imagekitUrlEndpoint, transformations, remoteHost })
+                const finaUrl = getImagekitUrl({ imgSrc: src, pageDirectory, localDir, imagekitUrlEndpoint, transformations, remoteHost })
 
                 return `${finaUrl} ${size}`
             })
@@ -131,39 +125,39 @@ export async function updateHtmlImagesToImagekit(html: string, options: Options)
 
     return {
         html: dom.serialize(),
-        errors:errorss,
+        errors: errorss,
     }
 }
 
-export function getRedirectUrl({imagekitUrlEndpoint,imagekitFakeAssetPath,transformations,remoteHost}:{
+export function getRedirectUrl({ imagekitUrlEndpoint, imagekitFakeAssetPath, transformations, remoteHost }: {
     imagekitUrlEndpoint: string
     imagekitFakeAssetPath: string
     transformations: string
     remoteHost: string
-}){
+}) {
     return `${imagekitUrlEndpoint}/${transformations}/${remoteHost}${imagekitFakeAssetPath}/:splat`
 }
 
-  export function findAssetsByPath(options: FindAssetsByPath) {
-    if ( !Array.isArray(options.path) ) {
-      options.path = [options.path];
+export function findAssetsByPath(options: FindAssetsByPath) {
+    if (!Array.isArray(options.path)) {
+        options.path = [options.path];
     }
-  
-    return options.path.flatMap(assetsPath => {
-       const pattern = `${options.baseDir}/${assetsPath}/**/*`
-       const  pages =  fg.sync(pattern);
-    
-      return pages.filter(file => !!path.extname(file));
-    })
-  }
 
-  
+    return options.path.flatMap(assetsPath => {
+        const pattern = `${options.baseDir}/${assetsPath}/**/*`
+        const pages = fg.sync(pattern);
+
+        return pages.filter(file => !!path.extname(file));
+    })
+}
+
+
 export function removeTrailingSlash(path: string) {
     return path.replace(/\/$/, '');
 }
 
 export function removeLeadingSlash(path: string) {
     path = path.replace(/^\//, '');
-    path = path.replace(/^\\/,'')
+    path = path.replace(/^\\/, '')
     return path;
 }

@@ -259,35 +259,3 @@ export function onEnd({ utils }: { utils: Utils }) {
     text
   });
 }
-
-
-// export const onPostBuild = async ({ constants}) => {
-//   const buildDir = path.resolve("/Users/yashaswiagrawal/vsc/netlify-demo/", constants.PUBLISH_DIR); // Assuming your build output directory is 'public'
-//   console.log("buildDir",buildDir)
-//   try {
-
-//     const files = await fs.readdir(buildDir);
-
-//     // Process each file
-//     for (const file of files) {
-//         const filePath = path.resolve(buildDir, file);
-//         // const stats = await fs.stat(filePath);
-  
-//         // Check if the file has been modified
-//         if (file === 'index.html') { // You'll need to define 'lastBuildTime' based on your requirements
-//           // Read the file contents
-//           let fileContents = await fs.readFile(filePath, 'utf8');
-  
-//           // Replace occurrences of strings starting with "HTTP" with "yahashwi"
-//           fileContents = fileContents.replace('https', 'yahashwi');
-  
-//           // Write the modified contents back to the file
-//           await fs.writeFile(filePath, fileContents, 'utf8');
-  
-//           console.log(`File ${file} has been modified.`);
-//         }
-//     }
-//   } catch (err) {
-//     console.error('Error reading files:', err);
-//   }
-// };
