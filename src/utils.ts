@@ -152,11 +152,17 @@ export function findAssetsByPath(options: FindAssetsByPath) {
 }
 
 
-export function removeTrailingSlash(path: string) {
+export function removeTrailingSlash(path: string | undefined): string {
+    if (typeof path !== 'string') {
+        return '';
+    }
     return path.replace(/\/$/, '');
 }
 
-export function removeLeadingSlash(path: string) {
+export function removeLeadingSlash(path: string | undefined): string {
+    if (typeof path !== 'string') {
+        return '';
+    }
     path = path.replace(/^\//, '');
     path = path.replace(/^\\/, '')
     return path;
