@@ -153,13 +153,13 @@ export async function onBuild({
 
       netlifyConfig.redirects.unshift({
         from: `${imagekitFakeAssetPath}/*`,
-        to: `${mediaPath}/:splat`,
+        to: `/${mediaPath}/:splat`,
         status: 200,
         force: true,
       });
 
       netlifyConfig.redirects.unshift({
-        from: `${mediaPath}/*`,
+        from: `/${mediaPath}/*`,
         to: getRedirectUrl({ imagekitUrlEndpoint: imagekitUrlEndpoint as string, imagekitFakeAssetPath, transformations, remoteHost: host as string }),
         status: 302,
         force: true,
