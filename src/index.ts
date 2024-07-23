@@ -1,10 +1,21 @@
 import fs from 'fs/promises';
-import path from 'path'
-import fg from 'fast-glob'
+import path from 'path';
+import fg from 'fast-glob';
 
 import { Inputs } from './types/integration';
-import { ERROR_IMAGEKIT_URL_ENDPOINT_REQUIRED, ERROR_INVALID_IMAGES_PATH, ERROR_NETLIFY_HOST_UNKNOWN } from './data/error';
-import { CustomError, findAssetsByPath, getRedirectUrl, removeLeadingSlash, removeTrailingSlash, updateHtmlImagesToImagekit } from './utils';
+import {
+  ERROR_IMAGEKIT_URL_ENDPOINT_REQUIRED,
+  ERROR_INVALID_IMAGES_PATH,
+  ERROR_NETLIFY_HOST_UNKNOWN,
+} from './data/error';
+import {
+  CustomError,
+  findAssetsByPath,
+  getRedirectUrl,
+  removeLeadingSlash,
+  removeTrailingSlash,
+  updateHtmlImagesToImagekit,
+} from './utils';
 
 type NetlifyConfig = {
   redirects: Array<{
@@ -43,8 +54,6 @@ type Constants = {
   SITE_ID: string;
 };
 
-
-
 type Utils = {
   build: {
     failBuild: (message: string, { error }?: { error: Error }) => void;
@@ -71,12 +80,9 @@ type OnBuildParams = {
 };
 type OnPostBuildParams = Omit<OnBuildParams, 'netlifyConfig'>;
 
-
-
-
 const globalErrors: {
-  page: string
-  errors: CustomError[] | string
+  page: string;
+  errors: CustomError[] | string;
 }[] = [];
 
 export async function onBuild({
@@ -84,27 +90,27 @@ export async function onBuild({
   constants,
   inputs,
   utils,
-}: OnBuildParams) {
+}: OnBuildParams): Promise<void> {
   console.log('[Imagekit] Creating redirects...');
 
   let host = process.env.URL;
 
-  if (process.env.CONTEXT === 'branch-deploy' || process.env.CONTEXT === 'deploy-preview') {
-    host = process.env.DEPLOY_PRIME_URL || ''
+  if (
+    process.env.CONTEXT === 'branch-deploy' ||
+    process.env.CONTEXT === 'deploy-preview'
+  ) {
+    host = process.env.DEPLOY_PRIME_URL || '';
   }
 
   console.log(`[Imagekit] Using host: ${host}`);
 
   const { PUBLISH_DIR } = constants;
-  const PUBLIC_ASSET_PATH = "imagekit-netlify-asset"
+  const PUBLIC_ASSET_PATH = 'imagekit-netlify-asset';
 
-  let {
-    urlEndpoint,
-    imagesPath
-  } = inputs;
+  const { urlEndpoint } = inputs;
+  let { imagesPath } = inputs;
 
   let imagekitUrlEndpoint = process.env.IMAGEKIT_URL_ENDPOINT || urlEndpoint;
-
 
   if (!host) {
     console.error(`[Imagekit] ${ERROR_NETLIFY_HOST_UNKNOWN}`);
@@ -113,7 +119,7 @@ export async function onBuild({
   }
 
   if (!imagesPath) {
-    imagesPath = ["images"]
+    imagesPath = ['images'];
   }
 
   imagekitUrlEndpoint = removeTrailingSlash(imagekitUrlEndpoint);
@@ -123,7 +129,7 @@ export async function onBuild({
     utils.build.failBuild(ERROR_IMAGEKIT_URL_ENDPOINT_REQUIRED);
     return;
   }
-  const transformations = "tr:f-auto"
+  const transformations = 'tr:f-auto';
 
   const imagesFiles = findAssetsByPath({
     baseDir: PUBLISH_DIR,
@@ -131,9 +137,7 @@ export async function onBuild({
   });
 
   if (imagesFiles.length === 0) {
-    console.log(
-      `[Imagekit] No files found at imagesPath, Please update it.`,
-    );
+    console.log(`[Imagekit] No files found at imagesPath, Please update it.`);
     utils.build.failBuild(ERROR_INVALID_IMAGES_PATH);
     return;
   }
@@ -143,14 +147,16 @@ export async function onBuild({
     imagesPath = [imagesPath];
   }
 
-  imagesPath.forEach(mediaPath => {
-    mediaPath = removeLeadingSlash(mediaPath)
-    mediaPath = removeTrailingSlash(mediaPath)
+  imagesPath.forEach((mediaPath) => {
+    mediaPath = removeLeadingSlash(mediaPath);
+    mediaPath = removeTrailingSlash(mediaPath);
     mediaPath = mediaPath.split(path.win32.sep).join(path.posix.sep);
-    const imagekitFakeAssetPath = `/${path.posix.join(PUBLIC_ASSET_PATH, mediaPath)}`;
+    const imagekitFakeAssetPath = `/${path.posix.join(
+      PUBLIC_ASSET_PATH,
+      mediaPath
+    )}`;
 
     try {
-
       netlifyConfig.redirects.unshift({
         from: `${imagekitFakeAssetPath}/*`,
         to: `/${mediaPath}/:splat`,
@@ -160,30 +166,37 @@ export async function onBuild({
 
       netlifyConfig.redirects.unshift({
         from: `/${mediaPath}/*`,
-        to: getRedirectUrl({ imagekitUrlEndpoint: imagekitUrlEndpoint as string, imagekitFakeAssetPath, transformations, remoteHost: host as string }),
+        to: getRedirectUrl({
+          imagekitUrlEndpoint: imagekitUrlEndpoint as string,
+          imagekitFakeAssetPath,
+          transformations,
+          remoteHost: host as string,
+        }),
         status: 302,
         force: true,
       });
     } catch (error) {
-      console.log("Error during rewrite", error)
+      console.log('Error during rewrite', error);
       globalErrors.push({
         page: mediaPath,
-        errors: `Error in rewrite`
-      })
+        errors: `Error in rewrite`,
+      });
     }
-  })
+  });
 }
 
 export const onPostBuild = async function ({
   constants,
   inputs,
   utils,
-}: OnPostBuildParams) {
-
+}: OnPostBuildParams): Promise<void> {
   let host: string = process.env.URL || '';
 
-  if (process.env.CONTEXT === 'branch-deploy' || process.env.CONTEXT === 'deploy-preview') {
-    host = process.env.DEPLOY_PRIME_URL || ''
+  if (
+    process.env.CONTEXT === 'branch-deploy' ||
+    process.env.CONTEXT === 'deploy-preview'
+  ) {
+    host = process.env.DEPLOY_PRIME_URL || '';
   }
 
   if (!host) {
@@ -193,13 +206,9 @@ export const onPostBuild = async function ({
   }
 
   const { PUBLISH_DIR } = constants;
-  const {
-    urlEndpoint,
-    imagesPath
-  }: Inputs = inputs;
+  const { urlEndpoint }: Inputs = inputs;
 
   let imagekitUrlEndpoint = process.env.IMAGEKIT_URL_ENDPOINT || urlEndpoint;
-
 
   imagekitUrlEndpoint = removeTrailingSlash(imagekitUrlEndpoint);
 
@@ -209,12 +218,11 @@ export const onPostBuild = async function ({
     return;
   }
 
-
-  const transformations = "tr:f-auto";
+  const transformations = 'tr:f-auto';
 
   // Find all HTML source files in the publish directory
-  let pages: string[] = []
-  const pattern = `${PUBLISH_DIR}/**/*.html`
+  let pages: string[] = [];
+  const pattern = `${PUBLISH_DIR}/**/*.html`;
   try {
     pages = await fg([pattern]);
   } catch (err) {
@@ -222,7 +230,7 @@ export const onPostBuild = async function ({
   }
 
   const results = await Promise.all(
-    pages.map(async page => {
+    pages.map(async (page) => {
       const sourceHtml = await fs.readFile(page, 'utf-8');
 
       const { html, errors } = await updateHtmlImagesToImagekit(sourceHtml, {
@@ -230,7 +238,7 @@ export const onPostBuild = async function ({
         pagePath: page,
         localDir: PUBLISH_DIR,
         remoteHost: host,
-        transformations
+        transformations,
       });
 
       await fs.writeFile(page, html);
@@ -239,21 +247,26 @@ export const onPostBuild = async function ({
         page,
         errors,
       };
-    }),
+    })
   );
 
   const errors = results.filter(({ errors }) => errors.length > 0);
-  globalErrors.push(...errors)
+  globalErrors.push(...errors);
+};
 
-}
-
-export const onEnd = function ({ utils }: { utils: Utils }) {
-  const summary = globalErrors.length > 0 ? `Imagekit build plugin completed with ${globalErrors.length} errors` : "Imagekit build plugin completed successfully"
-  const text = globalErrors.length > 0 ? `The build process found ${globalErrors.length} errors. Check build logs for more information` : "No errors found during build"
+export const onEnd = function ({ utils }: { utils: Utils }): void {
+  const summary =
+    globalErrors.length > 0
+      ? `Imagekit build plugin completed with ${globalErrors.length} errors`
+      : 'Imagekit build plugin completed successfully';
+  const text =
+    globalErrors.length > 0
+      ? `The build process found ${globalErrors.length} errors. Check build logs for more information`
+      : 'No errors found during build';
   utils.status.show({
-    title: "[Imagekit] Done.",
+    title: '[Imagekit] Done.',
     // Required.
     summary,
-    text
+    text,
   });
-}
+};

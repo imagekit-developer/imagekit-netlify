@@ -1,4 +1,4 @@
 export interface Inputs {
-    urlEndpoint?: string;
-    imagesPath: string |string[];
+  urlEndpoint?: string;
+  imagesPath: string | string[];
 }
