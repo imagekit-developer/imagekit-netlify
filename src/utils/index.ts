@@ -60,7 +60,12 @@ export async function updateHtmlImagesToImagekit(
   const images: HTMLImageElement[] = Array.from(
     dom.window.document.querySelectorAll('img')
   );
+
+  const sourceTags: HTMLSourceElement[] = Array.from(
+    dom.window.document.querySelectorAll('picture source')
+  );
   const pageDirectory = path.dirname(pagePath);
+  remoteHost = removeTrailingSlash(remoteHost);
 
   for (const $img of images) {
     const imgSrc = $img.getAttribute('src') as string;
@@ -70,7 +75,6 @@ export async function updateHtmlImagesToImagekit(
     }
 
     imagekitUrlEndpoint = removeTrailingSlash(imagekitUrlEndpoint);
-    remoteHost = removeTrailingSlash(remoteHost);
 
     const finalUrl = getImagekitUrl({
       imgSrc,
@@ -113,6 +117,23 @@ export async function updateHtmlImagesToImagekit(
       $img.setAttribute('srcset', srcsetUrlsImagekitString);
     }
 
+    for (const $source of sourceTags) {
+      const srcset = $source.getAttribute('srcset') as string;
+      if (!srcset) {
+        continue;
+      }
+
+      const finalUrl = getImagekitUrl({
+        imgSrc: srcset,
+        pageDirectory,
+        localDir,
+        imagekitUrlEndpoint,
+        transformations,
+        remoteHost,
+      });
+
+      $source.setAttribute('srcset', finalUrl);
+    }
     // Look for any preload tags that reference the image URLs. A specific use case here
     // is Next.js App Router using the Image component.
 
