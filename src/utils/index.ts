@@ -1,30 +1,21 @@
 import path from 'path';
 import { JSDOM } from 'jsdom';
 import fg from 'fast-glob';
+import {
+  ERROR_IMAGEKIT_URL_ENDPOINT_REQUIRED,
+  ERROR_NETLIFY_HOST_CLI_SUPPORT,
+  ERROR_NETLIFY_HOST_UNKNOWN,
+} from '../data/error';
+import Logger from './logger';
+import {
+  CustomError,
+  FindAssetsByPathArgument,
+  Options,
+  UpdateHtmlImagesToImagekit,
+  Utils,
+} from '../types/integration';
 
-export type CustomError = {
-  imgSrc: string;
-  message: string;
-};
-
-type Options = {
-  localDir: string;
-  remoteHost: string;
-  transformations: string;
-  imagekitUrlEndpoint: string;
-  pagePath: string;
-};
-
-interface FindAssetsByPath {
-  baseDir: string;
-  path: string | Array<string>;
-}
-interface UpdateHtmlImagesToImagekit {
-  html: string;
-  errors: CustomError[];
-}
-
-function isReomteUrl(url: string) {
+function isRemoteUrl(url: string) {
   return url.startsWith('http') || url.startsWith('//');
 }
 
@@ -43,7 +34,7 @@ function getImagekitUrl({
   transformations: string;
   remoteHost: string;
 }) {
-  if (!isReomteUrl(imgSrc)) {
+  if (!isRemoteUrl(imgSrc)) {
     imgSrc = removeLeadingSlash(imgSrc);
 
     const resultPath = path.resolve(pageDirectory, imgSrc);
@@ -81,7 +72,7 @@ export async function updateHtmlImagesToImagekit(
     imagekitUrlEndpoint = removeTrailingSlash(imagekitUrlEndpoint);
     remoteHost = removeTrailingSlash(remoteHost);
 
-    const finaUrl = getImagekitUrl({
+    const finalUrl = getImagekitUrl({
       imgSrc,
       pageDirectory,
       localDir,
@@ -90,7 +81,7 @@ export async function updateHtmlImagesToImagekit(
       remoteHost,
     });
 
-    $img.setAttribute('src', finaUrl);
+    $img.setAttribute('src', finalUrl);
 
     const srcset = $img.getAttribute('srcset');
 
@@ -105,7 +96,7 @@ export async function updateHtmlImagesToImagekit(
           return size;
         }
 
-        const finaUrl = getImagekitUrl({
+        const finalUrl = getImagekitUrl({
           imgSrc: src,
           pageDirectory,
           localDir,
@@ -114,7 +105,7 @@ export async function updateHtmlImagesToImagekit(
           remoteHost,
         });
 
-        return `${finaUrl} ${size}`;
+        return `${finalUrl} ${size}`;
       });
 
       const srcsetUrlsImagekitString = srcsetUrlsModified.join(', ');
@@ -123,7 +114,7 @@ export async function updateHtmlImagesToImagekit(
     }
 
     // Look for any preload tags that reference the image URLs. A specific use case here
-    // is Next.js App Router hen using the Image component.
+    // is Next.js App Router using the Image component.
 
     const $preload = dom.window.document.querySelector(
       `link[rel="preload"][as="image"][href="${imgSrc}"]`
@@ -161,7 +152,7 @@ export function getRedirectUrl({
   return `${imagekitUrlEndpoint}/${transformations}/${remoteHost}${imagekitFakeAssetPath}/:splat`;
 }
 
-export function findAssetsByPath(options: FindAssetsByPath): string[] {
+export function findAssetsByPath(options: FindAssetsByPathArgument): string[] {
   if (!Array.isArray(options.path)) {
     options.path = [options.path];
   }
@@ -170,15 +161,29 @@ export function findAssetsByPath(options: FindAssetsByPath): string[] {
     const pattern = `${options.baseDir}/${assetsPath}/**/*`;
     const pages = fg.sync(pattern);
 
-    return pages.filter((file) => !!path.extname(file));
+    return pages.filter((file) => path.extname(file));
   });
+}
+
+export function hostNotFoundError(utils: Utils): void {
+  Logger.error(ERROR_NETLIFY_HOST_UNKNOWN);
+  Logger.error(ERROR_NETLIFY_HOST_CLI_SUPPORT);
+  utils.build.failBuild(ERROR_NETLIFY_HOST_UNKNOWN);
+}
+
+export function invalidImagekitUrlEndpoint(utils: Utils): void {
+  Logger.error(ERROR_IMAGEKIT_URL_ENDPOINT_REQUIRED);
+  utils.build.failBuild(ERROR_IMAGEKIT_URL_ENDPOINT_REQUIRED);
 }
 
 export function removeTrailingSlash(path: string | undefined): string {
   if (typeof path !== 'string') {
     return '';
   }
-  return path.replace(/\/$/, '');
+
+  path.replace(/\/$/, '');
+  path = path.replace(/\\$/, '');
+  return path;
 }
 
 export function removeLeadingSlash(path: string | undefined): string {

@@ -2,82 +2,20 @@ import fs from 'fs/promises';
 import path from 'path';
 import fg from 'fast-glob';
 
-import { Inputs } from './types/integration';
+import { CustomError, Inputs, OnBuildParams, Utils } from './types/integration';
+import { ERROR_INVALID_IMAGES_PATH } from './data/error';
 import {
-  ERROR_IMAGEKIT_URL_ENDPOINT_REQUIRED,
-  ERROR_INVALID_IMAGES_PATH,
-  ERROR_NETLIFY_HOST_UNKNOWN,
-} from './data/error';
-import {
-  CustomError,
   findAssetsByPath,
   getRedirectUrl,
+  hostNotFoundError,
+  invalidImagekitUrlEndpoint,
   removeLeadingSlash,
   removeTrailingSlash,
   updateHtmlImagesToImagekit,
 } from './utils';
 
-type NetlifyConfig = {
-  redirects: Array<{
-    from: string;
-    to?: string;
-    status?: number;
-    force?: boolean;
-    signed?: string;
-    query?: Partial<Record<string, string>>;
-    headers?: Partial<Record<string, string>>;
-    conditions?: Partial<
-      Record<'Language' | 'Role' | 'Country' | 'Cookie', readonly string[]>
-    >;
-  }>;
-  headers: Array<{
-    for: string;
-    values: unknown; // marked as unknown because is not required here.
-  }>;
-  functions: {
-    directory: string;
-  };
-  build: {
-    command: string;
-    environment: Record<string, string>;
-    edge_functions: string;
-    processing: Record<string, unknown>;
-  };
-};
-type Constants = {
-  CONFIG_PATH?: string;
-  PUBLISH_DIR: string;
-  FUNCTIONS_SRC: string;
-  FUNCTIONS_DIST: string;
-  IS_LOCAL: boolean;
-  NETLIFY_BUILD_VERSION: `${string}.${string}.${string}`;
-  SITE_ID: string;
-};
+import Logger from './utils/logger';
 
-type Utils = {
-  build: {
-    failBuild: (message: string, { error }?: { error: Error }) => void;
-    failPlugin: (message: string, { error }?: { error: Error }) => void;
-    cancelBuild: (message: string, { error }?: { error: Error }) => void;
-  };
-  status: {
-    show: ({
-      title,
-      summary,
-      text,
-    }: {
-      title: string;
-      summary: string;
-      text: string;
-    }) => void;
-  };
-};
-type OnBuildParams = {
-  netlifyConfig: NetlifyConfig;
-  constants: Constants;
-  inputs: Inputs;
-  utils: Utils;
-};
 type OnPostBuildParams = Omit<OnBuildParams, 'netlifyConfig'>;
 
 const globalErrors: {
@@ -91,18 +29,20 @@ export async function onBuild({
   inputs,
   utils,
 }: OnBuildParams): Promise<void> {
-  console.log('[Imagekit] Creating redirects...');
+  Logger.info('Creating redirects...');
 
-  let host = process.env.URL;
-
-  if (
+  const host =
     process.env.CONTEXT === 'branch-deploy' ||
     process.env.CONTEXT === 'deploy-preview'
-  ) {
-    host = process.env.DEPLOY_PRIME_URL || '';
+      ? process.env.DEPLOY_PRIME_URL
+      : process.env.URL;
+
+  if (!host) {
+    hostNotFoundError(utils);
+    return;
   }
 
-  console.log(`[Imagekit] Using host: ${host}`);
+  Logger.info(`Using host: ${host}`);
 
   const { PUBLISH_DIR } = constants;
   const PUBLIC_ASSET_PATH = 'imagekit-netlify-asset';
@@ -110,25 +50,25 @@ export async function onBuild({
   const { urlEndpoint } = inputs;
   let { imagesPath } = inputs;
 
-  let imagekitUrlEndpoint = process.env.IMAGEKIT_URL_ENDPOINT || urlEndpoint;
+  const imagekitUrlEndpoint = removeTrailingSlash(
+    process.env.IMAGEKIT_URL_ENDPOINT || urlEndpoint
+  );
 
-  if (!host) {
-    console.error(`[Imagekit] ${ERROR_NETLIFY_HOST_UNKNOWN}`);
-    utils.build.failBuild(ERROR_NETLIFY_HOST_UNKNOWN);
+  if (!imagekitUrlEndpoint || typeof imagekitUrlEndpoint !== 'string') {
+    invalidImagekitUrlEndpoint(utils);
     return;
   }
 
-  if (!imagesPath) {
+  if (!imagesPath || (Array.isArray(imagesPath) && imagesPath.length === 0)) {
     imagesPath = ['images'];
   }
 
-  imagekitUrlEndpoint = removeTrailingSlash(imagekitUrlEndpoint);
-
-  if (!imagekitUrlEndpoint || typeof imagekitUrlEndpoint !== 'string') {
-    console.error(`[Imagekit] ${ERROR_IMAGEKIT_URL_ENDPOINT_REQUIRED}`);
-    utils.build.failBuild(ERROR_IMAGEKIT_URL_ENDPOINT_REQUIRED);
+  if (typeof imagesPath === 'string') {
+    imagesPath = [imagesPath];
+  } else if (!Array.isArray(imagesPath)) {
     return;
   }
+
   const transformations = 'tr:f-auto';
 
   const imagesFiles = findAssetsByPath({
@@ -137,14 +77,11 @@ export async function onBuild({
   });
 
   if (imagesFiles.length === 0) {
-    console.log(`[Imagekit] No files found at imagesPath, Please update it.`);
+    Logger.error(
+      `No files found at imagesPath: ${imagesPath}, Please update it.`
+    );
     utils.build.failBuild(ERROR_INVALID_IMAGES_PATH);
     return;
-  }
-  if (!Array.isArray(imagesPath) && typeof imagesPath !== 'string') return;
-
-  if (!Array.isArray(imagesPath)) {
-    imagesPath = [imagesPath];
   }
 
   imagesPath.forEach((mediaPath) => {
@@ -157,26 +94,27 @@ export async function onBuild({
     )}`;
 
     try {
-      netlifyConfig.redirects.unshift({
-        from: `${imagekitFakeAssetPath}/*`,
-        to: `/${mediaPath}/:splat`,
-        status: 200,
-        force: true,
-      });
-
-      netlifyConfig.redirects.unshift({
-        from: `/${mediaPath}/*`,
-        to: getRedirectUrl({
-          imagekitUrlEndpoint: imagekitUrlEndpoint as string,
-          imagekitFakeAssetPath,
-          transformations,
-          remoteHost: host as string,
-        }),
-        status: 302,
-        force: true,
-      });
+      netlifyConfig.redirects.unshift(
+        {
+          from: `${imagekitFakeAssetPath}/*`,
+          to: `/${mediaPath}/:splat`,
+          status: 200,
+          force: true,
+        },
+        {
+          from: `/${mediaPath}/*`,
+          to: getRedirectUrl({
+            imagekitUrlEndpoint: imagekitUrlEndpoint,
+            imagekitFakeAssetPath,
+            transformations,
+            remoteHost: host,
+          }),
+          status: 302,
+          force: true,
+        }
+      );
     } catch (error) {
-      console.log('Error during rewrite', error);
+      Logger.error(`Error during rewrite', error: ${error}`);
       globalErrors.push({
         page: mediaPath,
         errors: `Error in rewrite`,
@@ -200,21 +138,19 @@ export const onPostBuild = async function ({
   }
 
   if (!host) {
-    console.error(`[Imagekit] ${ERROR_NETLIFY_HOST_UNKNOWN}`);
-    utils.build.failBuild(ERROR_NETLIFY_HOST_UNKNOWN);
+    hostNotFoundError(utils);
     return;
   }
 
   const { PUBLISH_DIR } = constants;
   const { urlEndpoint }: Inputs = inputs;
 
-  let imagekitUrlEndpoint = process.env.IMAGEKIT_URL_ENDPOINT || urlEndpoint;
-
-  imagekitUrlEndpoint = removeTrailingSlash(imagekitUrlEndpoint);
+  const imagekitUrlEndpoint = removeTrailingSlash(
+    process.env.IMAGEKIT_URL_ENDPOINT || urlEndpoint
+  );
 
   if (!imagekitUrlEndpoint || typeof imagekitUrlEndpoint !== 'string') {
-    console.error(`[Imagekit] ${ERROR_IMAGEKIT_URL_ENDPOINT_REQUIRED}`);
-    utils.build.failBuild(ERROR_IMAGEKIT_URL_ENDPOINT_REQUIRED);
+    invalidImagekitUrlEndpoint(utils);
     return;
   }
 
@@ -226,7 +162,7 @@ export const onPostBuild = async function ({
   try {
     pages = await fg([pattern]);
   } catch (err) {
-    console.error('Error finding HTML files:', err);
+    Logger.error(`Error finding HTML files, error:${err}`);
   }
 
   const results = await Promise.all(
@@ -261,8 +197,8 @@ export const onEnd = function ({ utils }: { utils: Utils }): void {
       : 'Imagekit build plugin completed successfully';
   const text =
     globalErrors.length > 0
-      ? `The build process found ${globalErrors.length} errors. Check build logs for more information`
-      : 'No errors found during build';
+      ? `Imagekit build process found ${globalErrors.length} errors. Check build logs for more information`
+      : 'No errors occurred during Imagekit build process';
   utils.status.show({
     title: '[Imagekit] Done.',
     // Required.
