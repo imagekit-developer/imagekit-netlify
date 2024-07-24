@@ -123,27 +123,8 @@ export async function updateHtmlImagesToImagekit(
 
       $img.setAttribute('srcset', srcsetUrlsImagekitString);
     }
-
-    for (const $source of sourceTags) {
-      const srcset = $source.getAttribute('srcset') as string;
-      if (!srcset) {
-        continue;
-      }
-
-      const finalUrl = getImagekitUrl({
-        imgSrc: srcset,
-        pageDirectory,
-        localDir,
-        imagekitUrlEndpoint,
-        transformations,
-        remoteHost,
-      });
-
-      $source.setAttribute('srcset', finalUrl);
-    }
     // Look for any preload tags that reference the image URLs. A specific use case here
     // is Next.js App Router using the Image component.
-
     const $preload = dom.window.document.querySelector(
       `link[rel="preload"][as="image"][href="${imgSrc}"]`
     );
@@ -158,6 +139,24 @@ export async function updateHtmlImagesToImagekit(
       });
       $preload.setAttribute('href', imagekitUrl);
     }
+  }
+
+  for (const $source of sourceTags) {
+    const srcset = $source.getAttribute('srcset') as string;
+    if (!srcset) {
+      continue;
+    }
+
+    const finalUrl = getImagekitUrl({
+      imgSrc: srcset,
+      pageDirectory,
+      localDir,
+      imagekitUrlEndpoint,
+      transformations,
+      remoteHost,
+    });
+
+    $source.setAttribute('srcset', finalUrl);
   }
 
   return {
