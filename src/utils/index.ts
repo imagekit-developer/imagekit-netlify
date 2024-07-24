@@ -207,7 +207,7 @@ export function removeTrailingSlash(path: string | undefined): string {
     return '';
   }
 
-  path.replace(/\/$/, '');
+  path = path.replace(/\/$/, '');
   path = path.replace(/\\$/, '');
   return path;
 }
