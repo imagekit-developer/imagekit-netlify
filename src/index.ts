@@ -38,8 +38,7 @@ export async function onBuild({
       : process.env.URL;
 
   if (!host) {
-    hostNotFoundError(utils);
-    return;
+    return hostNotFoundError(utils);
   }
 
   Logger.info(`Using host: ${host}`);
@@ -54,9 +53,8 @@ export async function onBuild({
     process.env.IMAGEKIT_URL_ENDPOINT || urlEndpoint
   );
 
-  if (!imagekitUrlEndpoint || typeof imagekitUrlEndpoint !== 'string') {
-    invalidImagekitUrlEndpoint(utils);
-    return;
+  if (!imagekitUrlEndpoint) {
+    return invalidImagekitUrlEndpoint(utils);
   }
 
   if (!imagesPath || (Array.isArray(imagesPath) && imagesPath.length === 0)) {
@@ -68,6 +66,7 @@ export async function onBuild({
   } else if (!Array.isArray(imagesPath)) {
     return;
   }
+  imagesPath = imagesPath.filter((path) => typeof path === 'string');
 
   const transformations = 'tr:f-auto';
 
@@ -85,14 +84,22 @@ export async function onBuild({
   }
 
   imagesPath.forEach((mediaPath) => {
+    mediaPath = mediaPath
+      .replace(/^\\\\\?\\/, '')
+      .replace(/\\/g, '/')
+      .replace(/\/\/+/g, '/');
     mediaPath = removeLeadingSlash(mediaPath);
     mediaPath = removeTrailingSlash(mediaPath);
-    mediaPath = mediaPath.split(path.win32.sep).join(path.posix.sep);
+
     const imagekitFakeAssetPath = `/${path.posix.join(
       PUBLIC_ASSET_PATH,
       mediaPath
     )}`;
-
+    /*
+    First request is redirected to the imagekit server with a fake path using 302 status code.
+    Then that fake path is fetched by Imagekit server which hits the netlify server to fetch the asset.
+    Here netlify, return the actual asset as that fake path is rewritten with 200 status code.
+    */
     try {
       netlifyConfig.redirects.unshift(
         {
@@ -138,8 +145,7 @@ export const onPostBuild = async function ({
   }
 
   if (!host) {
-    hostNotFoundError(utils);
-    return;
+    return hostNotFoundError(utils);
   }
 
   const { PUBLISH_DIR } = constants;
@@ -149,9 +155,8 @@ export const onPostBuild = async function ({
     process.env.IMAGEKIT_URL_ENDPOINT || urlEndpoint
   );
 
-  if (!imagekitUrlEndpoint || typeof imagekitUrlEndpoint !== 'string') {
-    invalidImagekitUrlEndpoint(utils);
-    return;
+  if (!imagekitUrlEndpoint) {
+    return invalidImagekitUrlEndpoint(utils);
   }
 
   const transformations = 'tr:f-auto';

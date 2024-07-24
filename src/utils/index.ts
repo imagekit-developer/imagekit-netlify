@@ -35,11 +35,16 @@ function getImagekitUrl({
   remoteHost: string;
 }) {
   if (!isRemoteUrl(imgSrc)) {
-    imgSrc = removeLeadingSlash(imgSrc);
-
+    imgSrc = imgSrc
+      .replace(/^\\\\\?\\/, '')
+      .replace(/\\/g, '/')
+      .replace(/\/\/+/g, '/');
     const resultPath = path.resolve(pageDirectory, imgSrc);
     let finalPath = path.relative(localDir, resultPath);
-    finalPath = finalPath.split(path.win32.sep).join(path.posix.sep);
+    finalPath = finalPath
+      .replace(/^\\\\\?\\/, '')
+      .replace(/\\/g, '/')
+      .replace(/\/\/+/g, '/');
 
     return `${imagekitUrlEndpoint}/${transformations}/${remoteHost}/${finalPath}`;
   }
