@@ -3,7 +3,6 @@ import { JSDOM } from 'jsdom';
 import fg from 'fast-glob';
 import {
   ERROR_IMAGEKIT_URL_ENDPOINT_REQUIRED,
-  ERROR_NETLIFY_HOST_CLI_SUPPORT,
   ERROR_NETLIFY_HOST_UNKNOWN,
 } from '../data/error';
 import Logger from './logger';
@@ -39,6 +38,9 @@ function getImagekitUrl({
       .replace(/^\\\\\?\\/, '')
       .replace(/\\/g, '/')
       .replace(/\/\/+/g, '/');
+
+    imgSrc = removeLeadingSlash(imgSrc);
+
     const resultPath = path.resolve(pageDirectory, imgSrc);
     let finalPath = path.relative(localDir, resultPath);
     finalPath = finalPath
@@ -193,7 +195,6 @@ export function findAssetsByPath(options: FindAssetsByPathArgument): string[] {
 
 export function hostNotFoundError(utils: Utils): void {
   Logger.error(ERROR_NETLIFY_HOST_UNKNOWN);
-  Logger.error(ERROR_NETLIFY_HOST_CLI_SUPPORT);
   utils.build.failBuild(ERROR_NETLIFY_HOST_UNKNOWN);
 }
 
@@ -219,4 +220,13 @@ export function removeLeadingSlash(path: string | undefined): string {
   path = path.replace(/^\//, '');
   path = path.replace(/^\\/, '');
   return path;
+}
+
+export function isValidURL(urlString: string): boolean {
+  try {
+    new URL(urlString);
+    return true;
+  } catch (e) {
+    return false;
+  }
 }

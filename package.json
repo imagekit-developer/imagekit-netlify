@@ -46,6 +46,13 @@
     "fast-glob": "3.1.1",
     "jsdom": "21"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/imagekit-developer/imagekit-netlify"
+  },
+  "bugs": {
+    "url": "https://github.com/imagekit-developer/imagekit-netlify/issues"
+  },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",
     "@types/node": "^20.14.10",

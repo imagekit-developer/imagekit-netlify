@@ -9,6 +9,7 @@ import {
   getRedirectUrl,
   hostNotFoundError,
   invalidImagekitUrlEndpoint,
+  isValidURL,
   removeLeadingSlash,
   removeTrailingSlash,
   updateHtmlImagesToImagekit,
@@ -16,125 +17,17 @@ import {
 
 import Logger from './utils/logger';
 
-type OnPostBuildParams = Omit<OnBuildParams, 'netlifyConfig'>;
-
 const globalErrors: {
   page: string;
   errors: CustomError[] | string;
 }[] = [];
 
-export async function onBuild({
-  netlifyConfig,
-  constants,
-  inputs,
-  utils,
-}: OnBuildParams): Promise<void> {
-  Logger.info('Creating redirects...');
-
-  const host =
-    process.env.CONTEXT === 'branch-deploy' ||
-    process.env.CONTEXT === 'deploy-preview'
-      ? process.env.DEPLOY_PRIME_URL
-      : process.env.URL;
-
-  if (!host) {
-    return hostNotFoundError(utils);
-  }
-
-  Logger.info(`Using host: ${host}`);
-
-  const { PUBLISH_DIR } = constants;
-  const PUBLIC_ASSET_PATH = 'imagekit-netlify-asset';
-
-  const { urlEndpoint } = inputs;
-  let { imagesPath } = inputs;
-
-  const imagekitUrlEndpoint = removeTrailingSlash(
-    process.env.IMAGEKIT_URL_ENDPOINT || urlEndpoint
-  );
-
-  if (!imagekitUrlEndpoint) {
-    return invalidImagekitUrlEndpoint(utils);
-  }
-
-  if (!imagesPath || (Array.isArray(imagesPath) && imagesPath.length === 0)) {
-    imagesPath = ['images'];
-  }
-
-  if (typeof imagesPath === 'string') {
-    imagesPath = [imagesPath];
-  } else if (!Array.isArray(imagesPath)) {
-    return;
-  }
-  imagesPath = imagesPath.filter((path) => typeof path === 'string');
-
-  const transformations = 'tr:f-auto';
-
-  const imagesFiles = findAssetsByPath({
-    baseDir: PUBLISH_DIR,
-    path: imagesPath,
-  });
-
-  if (imagesFiles.length === 0) {
-    Logger.error(
-      `No files found at imagesPath: ${imagesPath}, Please update it.`
-    );
-    utils.build.failBuild(ERROR_INVALID_IMAGES_PATH);
-    return;
-  }
-
-  imagesPath.forEach((mediaPath) => {
-    mediaPath = mediaPath
-      .replace(/^\\\\\?\\/, '')
-      .replace(/\\/g, '/')
-      .replace(/\/\/+/g, '/');
-    mediaPath = removeLeadingSlash(mediaPath);
-    mediaPath = removeTrailingSlash(mediaPath);
-
-    const imagekitFakeAssetPath = `/${path.posix.join(
-      PUBLIC_ASSET_PATH,
-      mediaPath
-    )}`;
-    /*
-    First request is redirected to the imagekit server with a fake path using 302 status code.
-    Then that fake path is fetched by Imagekit server which hits the netlify server to fetch the asset.
-    Here netlify, return the actual asset as that fake path is rewritten with 200 status code.
-    */
-    try {
-      netlifyConfig.redirects.unshift(
-        {
-          from: `${imagekitFakeAssetPath}/*`,
-          to: `/${mediaPath}/:splat`,
-          status: 200,
-          force: true,
-        },
-        {
-          from: `/${mediaPath}/*`,
-          to: getRedirectUrl({
-            imagekitUrlEndpoint: imagekitUrlEndpoint,
-            imagekitFakeAssetPath,
-            transformations,
-            remoteHost: host,
-          }),
-          status: 302,
-          force: true,
-        }
-      );
-    } catch (error) {
-      Logger.error(`Error during rewrite', error: ${error}`);
-      globalErrors.push({
-        page: mediaPath,
-        errors: `Error in rewrite`,
-      });
-    }
-  });
-}
-
 export const onPostBuild = async function ({
   constants,
   inputs,
   utils,
-}: OnPostBuildParams): Promise<void> {
+  netlifyConfig,
+}: OnBuildParams): Promise<void> {
   let host: string = process.env.URL || '';
 
   if (
@@ -149,17 +42,91 @@ export const onPostBuild = async function ({
   }
 
   const { PUBLISH_DIR } = constants;
+  const PUBLIC_ASSET_PATH = 'imagekit-netlify-asset';
   const { urlEndpoint }: Inputs = inputs;
+  let { imagesPath }: Inputs = inputs;
 
   const imagekitUrlEndpoint = removeTrailingSlash(
     process.env.IMAGEKIT_URL_ENDPOINT || urlEndpoint
   );
 
-  if (!imagekitUrlEndpoint) {
+  if (!isValidURL(imagekitUrlEndpoint)) {
     return invalidImagekitUrlEndpoint(utils);
   }
 
   const transformations = 'tr:f-auto';
+
+  if (!imagesPath || (Array.isArray(imagesPath) && imagesPath.length === 0)) {
+    imagesPath = ['images'];
+  }
+
+  if (typeof imagesPath === 'string') {
+    imagesPath = [imagesPath];
+  }
+
+  if (Array.isArray(imagesPath) && imagesPath.length > 0) {
+    imagesPath = imagesPath.filter((path) => typeof path === 'string');
+
+    const imagesFiles = findAssetsByPath({
+      baseDir: PUBLISH_DIR,
+      path: imagesPath,
+    });
+
+    if (imagesFiles.length === 0) {
+      Logger.error(
+        `No files found at imagesPath: ${imagesPath}, Please update it.`
+      );
+      utils.build.failBuild(ERROR_INVALID_IMAGES_PATH);
+      return;
+    }
+
+    imagesPath.forEach((mediaPath) => {
+      mediaPath = mediaPath
+        .replace(/^\\\\\?\\/, '')
+        .replace(/\\/g, '/')
+        .replace(/\/\/+/g, '/');
+      mediaPath = removeLeadingSlash(mediaPath);
+      mediaPath = removeTrailingSlash(mediaPath);
+
+      const imagekitFakeAssetPath = `/${path.posix.join(
+        PUBLIC_ASSET_PATH,
+        mediaPath
+      )}`;
+
+      /*
+      First request is redirected to the imagekit server with a fake path using 302 status code.
+      Then that fake path is fetched by Imagekit server which hits the netlify server to fetch the asset.
+      Here netlify, return the actual asset as that fake path is rewritten with 200 status code.
+      */
+      try {
+        netlifyConfig.redirects.unshift(
+          {
+            from: `${imagekitFakeAssetPath}/*`,
+            to: `/${mediaPath}/:splat`,
+            status: 200,
+            force: true,
+          },
+          {
+            from: `/${mediaPath}/*`,
+            to: getRedirectUrl({
+              imagekitUrlEndpoint: imagekitUrlEndpoint,
+              imagekitFakeAssetPath,
+              transformations,
+              remoteHost: host,
+            }),
+            status: 302,
+            force: true,
+          }
+        );
+      } catch (error) {
+        Logger.error(`Error during rewrite', error: ${error}`);
+        globalErrors.push({
+          page: mediaPath,
+          errors: `Error in rewrite`,
+        });
+      }
+    });
+  }
 
   // Find all HTML source files in the publish directory
   let pages: string[] = [];
