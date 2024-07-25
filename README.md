@@ -85,9 +85,9 @@ yarn add --dev netlify-plugin-imagekit
 After following above steps, the Imagekit plugin will work out of the box. Internally it uses the below mechanism to deliver highly optimize image. 
 
 ### 1. Modify URLs in production ready HTML files
-This is useful in those scenarios where, after the build process, proper HTML files are generated. So for these frameworks, the plugin will tap into the `onPostBuild` hook, where it uses `jsdom` to create a node-based representation of the DOM for each output HTML file, then walk through each node, and on founding either an `image tag` or `picture tag`, we replace the `src` or `srcset` path with an Imagekit URL.
+This is useful in scenarios where proper HTML files are generated after the build process. For these frameworks, the plugin taps into the `onPostBuild` hook, using `jsdom` to create a node-based representation of the DOM for each output HTML file. It then walks through each node, and upon finding an img or picture tag, it replaces the `src` or `srcset` path with an ImageKit URL.
 
-While this approach works well for many situations, especially during the initial page load, but using a framework with client-side routing or features that alter the DOM, or which does not generate HTML files on build like `React` the above method fails which necessitates below mechanism.
+While this approach works well for many situations, especially during the initial page load, it fails when using a framework with client-side routing or features that alter the DOM, or that does not generate HTML files on build, such as `React`. This necessitates the use of the mechanism described below.
 
 ### 2. Redirect assets through the Imagekit Server
 
