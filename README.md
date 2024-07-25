@@ -98,13 +98,3 @@ In this method, the user specifies all the paths where their assets are stored r
 - When a user uses external or third-party URLs instead of static assets in frameworks like `React` that do not generate HTML files after the build process or mutate the DOM on the client side, these URLs will not be replaced by ImageKit URLs.
 
 - Another limitation is that when base64 URLs are used for images, no separate request is made to the backend to fetch the images. As a result, these images cannot be replaced.
-
-
-
-
-
-
-
-
-
-
