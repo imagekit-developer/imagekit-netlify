@@ -197,9 +197,20 @@ export function hostNotFoundError(utils: Utils): void {
   utils.build.failBuild(ERROR_NETLIFY_HOST_UNKNOWN);
 }
 
-export function invalidImagekitUrlEndpoint(utils: Utils): void {
-  Logger.error(ERROR_IMAGEKIT_URL_ENDPOINT_REQUIRED);
-  utils.build.failBuild(ERROR_IMAGEKIT_URL_ENDPOINT_REQUIRED);
+export function invalidImagekitUrlEndpoint(
+  utils: Utils,
+  urlString: string
+): void {
+  Logger.error(
+    urlString
+      ? `Invalid URL endpoint. URL Endpoint: ${urlString}`
+      : ERROR_IMAGEKIT_URL_ENDPOINT_REQUIRED
+  );
+  utils.build.failBuild(
+    urlString
+      ? `Invalid URL endpoint. URL Endpoint: ${urlString}`
+      : ERROR_IMAGEKIT_URL_ENDPOINT_REQUIRED
+  );
 }
 
 export function removeTrailingSlash(path: string | undefined): string {

@@ -51,7 +51,7 @@ export const onPostBuild = async function ({
   );
 
   if (!isValidURL(imagekitUrlEndpoint)) {
-    return invalidImagekitUrlEndpoint(utils);
+    return invalidImagekitUrlEndpoint(utils, imagekitUrlEndpoint);
   }
 
   const transformations = 'tr:f-auto';

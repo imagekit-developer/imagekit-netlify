@@ -42,9 +42,9 @@ export interface Constants {
 
 export interface Utils {
   build: {
-    failBuild: (message: string, { error }?: { error: Error }) => void;
-    failPlugin: (message: string, { error }?: { error: Error }) => void;
-    cancelBuild: (message: string, { error }?: { error: Error }) => void;
+    failBuild: (message: string) => void;
+    failPlugin: (message: string) => void;
+    cancelBuild: (message: string) => void;
   };
   status: {
     show: ({
