@@ -9,13 +9,13 @@ The plugin seamlessly integrates with your Netlify site, delivering high-quality
 
 ## Imagekit side setup
 
-Before starting, the user needs to have an ImageKit account to use the plugin. They must set up a URL endpoint pointing to a web proxy origin as mentioned below.
+Before starting, you need to have an ImageKit account to use the plugin. Then, you must set up a URL endpoint pointing to a web proxy origin as described below.
 
-- The user needs to add web proxy origin by following [these steps](https://imagekit.io/docs/integration/web-proxy).
+- Add web proxy origin by following [these steps](https://imagekit.io/docs/integration/web-proxy).
 
 - Add the above web proxy origin as the URL endpoint by following [these steps](https://imagekit.io/docs/integration/connect-external-storage#creating-a-new-url-endpoint).
 
-After following the above steps, the user will get the Imagekit URL endpoint.
+After following the above steps, you will have the Imagekit URL endpoint.
 
 ```
 https://ik.imagekit.io/{imagekit_id}/{origin_identifier}
@@ -23,7 +23,7 @@ https://ik.imagekit.io/{imagekit_id}/{origin_identifier}
 
 ## Integrating the Imagekit plugin
 
-Currently users can use plugin with the help of [file-based installation](https://docs.netlify.com/integrations/build-plugins/#file-based-installation).
+Currently you can integrate plugin with the help of [file-based installation](https://docs.netlify.com/integrations/build-plugins/#file-based-installation).
 
 ### File-based installation
 
@@ -47,9 +47,8 @@ Currently users can use plugin with the help of [file-based installation](https:
 <br>
 
 > **Note:**
-> We can also set IMAGEKIT_URL_ENDPOINT env variable as an alternative to providing urlEndpoint in a plugin input. 
-The environment variable can be set in multiple ways through [Netlify UI, Netlify API, or Netlify CLI](https://docs.netlify.com/environment-variables/get-started/#create-variables-with-the-netlify-ui-cli-or-api). The user can also pass environment variable through  [Netlify configuration file](https://docs.netlify.com/environment-variables/get-started/#create-variables-with-a-netlify-configuration-file) `netlify.toml`.
-
+> You can also set `IMAGEKIT_URL_ENDPOINT` env variable as an alternative to providing urlEndpoint in a plugin input.
+The environment variable can be set in multiple ways through [Netlify UI, Netlify API, or Netlify CLI](https://docs.netlify.com/environment-variables/get-started/#create-variables-with-the-netlify-ui-cli-or-api). You can also pass environment variable through [Netlify configuration file](https://docs.netlify.com/environment-variables/get-started/#create-variables-with-a-netlify-configuration-file) `netlify.toml`.
 
 #### Optionally adding `imagesPath`:
 
@@ -62,16 +61,16 @@ The environment variable can be set in multiple ways through [Netlify UI, Netlif
   imagesPath = ["/my-image-path","my-image-path-two"] // default value is set to "images"
 ```
 
- It represents the path where images are stored that the user wants to be served through the Imagekit server with respect to the [publish directory](https://docs.netlify.com/configure-builds/overview/#set-the-publish-directory). If images are stored in multiple directories, the user can provide array to `imagesPath`, and all such images would be redirected to Imagekit. If no value is mentioned then by default value is set to `images`.
+ It specifies the paths, relative to the [publish directory](https://docs.netlify.com/configure-builds/overview/#set-the-publish-directory), where images are stored and should be served through the ImageKit server. If images are stored in multiple directories, you can provide an array to `imagesPath`, and all such images will be redirected to ImageKit. If no value is provided, the default value is set to images.
 
  > **Publish Directory:**
  >When deploying a front-end project on Netlify, the deployment is done after running the build command, which generates a folder containing the build output. The name of this folder can vary depending on the framework being used. For example, in a `React` project, the folder might be named `build` or `dist`. This folder's path must be specified as the publish directory in Netlify.
  >
- >You can find a list of build commands and publish directories for various frameworks on Netlify [here](https://docs.netlify.com/frameworks/).
+ >Find a comprehensive list of build commands and publish directories for various frameworks on Netlify [here](https://docs.netlify.com/frameworks/).
 
  <br>
 
- In the last user also needs to add `netlify-plugin-imagekit` as a dev dependency as mentioned [here](https://docs.netlify.com/integrations/build-plugins/#add-dependency).
+ In the last it is needed to add `netlify-plugin-imagekit` as a dev dependency as mentioned [here](https://docs.netlify.com/integrations/build-plugins/#add-dependency).
 
 ```
 // using npm
@@ -91,10 +90,10 @@ While this approach works well for many situations, especially during the initia
 
 ### 2. Redirect assets through the Imagekit Server
 
-In this method, the user specifies all the paths where their assets are stored relative to the publish directory as `imagesPath`. Then, using the redirect feature of [Netlify Redirects and rewrites](https://docs.netlify.com/routing/redirects/), we redirect the existing image URLs from the Netlify server to the ImageKit server. The ImageKit server fetches the original image, optimizes it, and then serves it back to the end user.
+In this approach, all asset paths relative to the publish directory as `imagesPath` is specified. Then, using the redirect feature of [Netlify Redirects and rewrites](https://docs.netlify.com/routing/redirects/), we redirect the existing image URLs from the Netlify server to the ImageKit server. The ImageKit server fetches the original image, optimizes it, and then serves it back to the end user.
 
 ## Limitations
 
-- When a user uses external or third-party URLs instead of static assets in frameworks like `React` that do not generate HTML files after the build process or mutate the DOM on the client side, these URLs will not be replaced by ImageKit URLs.
+- When external or third-party URLs are used instead of static assets in frameworks like `React` that do not generate HTML files after the build process or mutate the DOM on the client side, these URLs will not be replaced by ImageKit URLs.
 
 - Another limitation is that when base64 URLs are used for images, no separate request is made to the backend to fetch the images. As a result, these images cannot be replaced.
