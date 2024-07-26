@@ -57,7 +57,7 @@ The environment variable can be set in multiple ways through [Netlify UI, Netlif
   package = "netlify-plugin-imagekit"
 
   [plugins.inputs]
-  urlEndpoint = "https://ik.imagekit.io/a1yisxurxo/proxy"
+  urlEndpoint = "https://ik.imagekit.io/{imagekit_id}/{origin_identifier}"
   imagesPath = ["/my-image-path","my-image-path-two"] // default value is set to "images"
 ```
 
