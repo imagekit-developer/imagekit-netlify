@@ -1,13 +1,24 @@
-# Imagekit Netlify plugin
+[<img width="250" alt="ImageKit.io" src="https://raw.githubusercontent.com/imagekit-developer/imagekit-javascript/master/assets/imagekit-light-logo.svg"/>](https://imagekit.io)
 
-The plugin seamlessly integrates with your Netlify site, delivering high-quality optimized images with the help of [Imagekit](https://imagekit.io/).
+# ImageKit Netlify plugin
 
-- [Imagekit side setup](#imagekit-side-setup)
-- [Integrating the Imagekit plugin](#integrating-the-imagekit-plugin)
-- [Working](#working)
+[![Node CI](https://github.com/imagekit-developer/imagekit-next/workflows/Node%20CI/badge.svg)](https://github.com/imagekit-developer/imagekit-netlify/)
+[![npm version](https://img.shields.io/npm/v/imagekit-next)](https://www.npmjs.com/package/imagekit-netlify)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Twitter Follow](https://img.shields.io/twitter/follow/imagekitio?label=Follow&style=social)](https://twitter.com/ImagekitIo)
+
+The plugin seamlessly integrates with your Netlify site, delivering high-quality optimized images with the help of [ImageKit](https://imagekit.io/).
+
+- [Prerequisites](#prerequisites)
+- [Setup ImageKit Netlify plugin](#setup-imagekit-netlify-plugin)
+- [How does it work?](#how-does-it-work)
 - [Limitations](#limitations)
+- [Support](#support)
+- [Links](#links)
+- [License](#license)
 
-## Imagekit side setup
+
+## Prerequisites
 
 Before starting, you need to have an ImageKit account to use the plugin. Then, you must set up a URL endpoint pointing to a web proxy origin as described below.
 
@@ -15,13 +26,13 @@ Before starting, you need to have an ImageKit account to use the plugin. Then, y
 
 - Add the above web proxy origin as the URL endpoint by following [these steps](https://imagekit.io/docs/integration/connect-external-storage#creating-a-new-url-endpoint).
 
-After following the above steps, you will have the Imagekit URL endpoint.
+After following the above steps, you will have the ImageKit URL endpoint.
 
 ```
 https://ik.imagekit.io/{imagekit_id}/{origin_identifier}
 ```
 
-## Integrating the Imagekit plugin
+## Setup ImageKit Netlify plugin
 
 Currently you can integrate plugin with the help of [file-based installation](https://docs.netlify.com/integrations/build-plugins/#file-based-installation).
 
@@ -34,7 +45,7 @@ Currently you can integrate plugin with the help of [file-based installation](ht
   package = "netlify-plugin-imagekit"
 ```
 
-#### Add the Imagekit URL endpoint:
+#### Add the ImageKit URL endpoint:
 
 ```toml
 [[plugins]]
@@ -80,15 +91,15 @@ npm install -D netlify-plugin-imagekit
 yarn add --dev netlify-plugin-imagekit
 ```
 
-## Working
-After following above steps, the Imagekit plugin will work out of the box. Internally it uses the below mechanism to deliver highly optimize image. 
+## How does it work?
+After following above steps, the ImageKit plugin will work out of the box. Internally it uses the below mechanism to deliver highly optimize image. 
 
 ### 1. Modify URLs in production ready HTML files
 This is useful in scenarios where proper HTML files are generated after the build process. For these frameworks, the plugin taps into the `onPostBuild` hook, using `jsdom` to create a node-based representation of the DOM for each output HTML file. It then walks through each node, and upon finding an img or picture tag, it replaces the `src` or `srcset` path with an ImageKit URL.
 
 While this approach works well for many situations, especially during the initial page load, it fails when using a framework with client-side routing or features that alter the DOM, or that does not generate HTML files on build, such as `React`. This necessitates the use of the mechanism described below.
 
-### 2. Redirect assets through the Imagekit Server
+### 2. Redirect assets through the ImageKit Server
 
 In this approach, all asset paths relative to the publish directory as `imagesPath` is specified. Then, using the redirect feature of [Netlify Redirects and rewrites](https://docs.netlify.com/routing/redirects/), we redirect the existing image URLs from the Netlify server to the ImageKit server. The ImageKit server fetches the original image, optimizes it, and then serves it back to the end user.
 
@@ -97,3 +108,14 @@ In this approach, all asset paths relative to the publish directory as `imagesPa
 - When external or third-party URLs are used instead of static assets in frameworks like `React` that do not generate HTML files after the build process or mutate the DOM on the client side, these URLs will not be replaced by ImageKit URLs.
 
 - Another limitation is that when base64 URLs are used for images, no separate request is made to the backend to fetch the images. As a result, these images cannot be replaced.
+
+## Support
+
+For any feedback or to report any issues or general implementation support, please reach out to [support@imagekit.io](mailto:support@imagekit.io)
+
+## Links
+* [Documentation](https://imagekit.io/docs)
+* [Main website](https://imagekit.io)
+
+## License
+Released under the MIT license.
