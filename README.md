@@ -11,7 +11,6 @@ The plugin seamlessly integrates with your Netlify site, delivering high-quality
 
 - [Prerequisites](#prerequisites)
 - [Setup ImageKit Netlify plugin](#setup-imagekit-netlify-plugin)
-- [How does it work?](#how-does-it-work)
 - [Limitations](#limitations)
 - [Support](#support)
 - [Links](#links)
@@ -91,17 +90,7 @@ npm install -D netlify-plugin-imagekit
 yarn add --dev netlify-plugin-imagekit
 ```
 
-## How does it work?
-After following above steps, the ImageKit plugin will work out of the box. Internally it uses the below mechanism to deliver highly optimized images. 
-
-### 1. Modify URLs in production-ready HTML files
-This is useful in scenarios where proper HTML files are generated after the build process. For these frameworks, the plugin taps into the `onPostBuild` hook, using `jsdom` to create a node-based representation of the DOM for each output HTML file. It then walks through each node, and upon finding an img or picture tag, it replaces the `src` or `srcset` path with an ImageKit URL.
-
-While this approach works well for many situations, especially during the initial page load, it fails when using a framework with client-side routing or features that alter the DOM or that does not generate HTML files on build, such as `React`. This necessitates the use of the mechanism described below.
-
-### 2. Redirect assets through the ImageKit Server
-
-In this approach, all asset paths relative to the publish directory as `imagesPath` is specified. Then, using the redirect feature of [Netlify Redirects and rewrites](https://docs.netlify.com/routing/redirects/), we redirect the existing image URLs from the Netlify server to the ImageKit server. The ImageKit server fetches the original image, optimizes it, and then serves it back to the end user.
+After following the above steps, the ImageKit plugin will work out of the box. Internally, it uses the mechanism described [here](https://imagekit.io/docs/integration/netlify#how-does-it-work) to deliver highly optimized images.
 
 ## Limitations
 
@@ -114,7 +103,7 @@ In this approach, all asset paths relative to the publish directory as `imagesPa
 For any feedback or to report any issues or general implementation support, please reach out to [support@imagekit.io](mailto:support@imagekit.io)
 
 ## Links
-* [Documentation](https://imagekit.io/docs)
+* [Documentation](https://imagekit.io/docs/integration/netlify)
 * [Main website](https://imagekit.io)
 
 ## License
