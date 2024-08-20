@@ -3,7 +3,7 @@
 # ImageKit Netlify plugin
 
 [![Node CI](https://github.com/imagekit-developer/imagekit-next/workflows/Node%20CI/badge.svg)](https://github.com/imagekit-developer/imagekit-netlify/)
-[![npm version](https://img.shields.io/npm/v/imagekit-next)](https://www.npmjs.com/package/imagekit-netlify)
+[![npm version](https://img.shields.io/npm/v/imagekit-next)](https://www.npmjs.com/package/netlify-plugin-imagekit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Twitter Follow](https://img.shields.io/twitter/follow/imagekitio?label=Follow&style=social)](https://twitter.com/ImagekitIo)
 
